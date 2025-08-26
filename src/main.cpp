@@ -69,58 +69,130 @@ static void smartDelay(unsigned long ms) {
 // Captura de datos crudos en vectores
 void capture() {
   smartDelay(0);
-  Serial.println("[CAPTURE] Capturando datos...");
+  Serial.println("\n[CAPTURE] Iniciando captura de datos...");
+  Serial.println("----------------------------------------");
   
   for(int i = 0; i < MEASURE_COUNT; i++) {
     hum_vector[i] = sensor.readHumidity();
-    smartDelay(10); // Delay entre medidas de humedad y temperatura
+    Serial.printf("Humedad[%d]: %.2f%%\n", i, hum_vector[i]);
+    smartDelay(10);
+    
     temp_vector[i] = sensor.readTemperature();
-    smartDelay(10); // Delay entre iteraciones
+    Serial.printf("Temperatura[%d]: %.2f°C\n", i, temp_vector[i]);
+    smartDelay(10);
+    
+    Serial.println("----------------------------------------");
   }
   
-  Serial.println("[CAPTURE] Datos brutos obtenidos");
+  Serial.println("[CAPTURE] Datos brutos capturados exitosamente");
 }
 
 // Promediado de medidas
 void pruning() {
   smartDelay(0);
-  Serial.println("[PRUNING] Procesando promedios...");
+  Serial.println("\n[PRUNING] Iniciando procesamiento de promedios...");
+  Serial.println("----------------------------------------");
   
   float sum_temp = 0.0;
   float sum_hum = 0.0;
   int valid_temp = 0;
   int valid_hum = 0;
   
+  Serial.println("Analizando medidas válidas:");
   for(int i = 0; i < MEASURE_COUNT; i++) {
     if(!isnan(temp_vector[i])) {
       sum_temp += temp_vector[i];
       valid_temp++;
+      Serial.printf("Temperatura[%d]: %.2f°C (válida)\n", i, temp_vector[i]);
+    } else {
+      Serial.printf("Temperatura[%d]: Inválida\n", i);
     }
+    
     if(!isnan(hum_vector[i])) {
       sum_hum += hum_vector[i];
       valid_hum++;
+      Serial.printf("Humedad[%d]: %.2f%% (válida)\n", i, hum_vector[i]);
+    } else {
+      Serial.printf("Humedad[%d]: Inválida\n", i);
     }
+    Serial.println("----------------------------------------");
   }
   
   // Calculo de promedios con validación
   temperatura = valid_temp > 0 ? sum_temp / valid_temp : -999.0;
   humedad = valid_hum > 0 ? sum_hum / valid_hum : -999.0;
+  
+  Serial.println("\nResultados del procesamiento:");
+  Serial.printf("- Medidas válidas de temperatura: %d/%d\n", valid_temp, MEASURE_COUNT);
+  Serial.printf("- Medidas válidas de humedad: %d/%d\n", valid_hum, MEASURE_COUNT);
+  Serial.printf("- Temperatura promedio: %.2f°C\n", temperatura);
+  Serial.printf("- Humedad promedio: %.2f%%\n", humedad);
+  Serial.println("----------------------------------------");
 }
 
 // Empaquetado y salida final con GPS
 void bundling() {
   smartDelay(0);
-  Serial.println("[BUNDLING] Empaquetando datos finales...");
+  Serial.println("\n[BUNDLING] Empaquetando datos finales...");
+  Serial.println("----------------------------------------");
   
-  // Captura de GPS solo en el bundling
+  Serial.println("Diagnóstico GPS:");
+  Serial.println("----------------------------------------");
+  
+  // Estado general del GPS
+  Serial.printf("- Satélites conectados: %d\n", gps.satellites.value());
+  Serial.printf("- Precisión (HDOP): %.2f\n", gps.hdop.hdop());
+  Serial.printf("- Altura sobre nivel del mar: %.2f metros\n", gps.altitude.meters());
+  Serial.printf("- Velocidad: %.2f km/h\n", gps.speed.kmph());
+  Serial.printf("- Curso: %.2f°\n", gps.course.deg());
+  
+  // Fecha y hora
+  if (gps.date.isValid() && gps.time.isValid()) {
+    Serial.printf("- Fecha/Hora: %02d/%02d/%d %02d:%02d:%02d UTC\n",
+                  gps.date.day(), gps.date.month(), gps.date.year(),
+                  gps.time.hour(), gps.time.minute(), gps.time.second());
+  } else {
+    Serial.println("- Fecha/Hora: No disponible");
+  }
+  
+  // Estado de las coordenadas
+  Serial.println("\nEstado de coordenadas:");
   if (gps.location.isValid()) {
     lat = gps.location.lat();
     lon = gps.location.lng();
+    Serial.println("- Estado: Válidas");
+    Serial.printf("- Latitud: %.6f\n", lat);
+    Serial.printf("- Longitud: %.6f\n", lon);
+    Serial.printf("- Edad de los datos: %lu ms\n", gps.location.age());
   } else {
     lat = -999.0;
     lon = -999.0;
+    Serial.println("- Estado: NO VÁLIDAS");
+    Serial.println("- Causa posible: Sin fix GPS");
   }
+
+  // Diagnóstico de sensores
+  Serial.println("\nDiagnóstico de sensores HDC1080:");
+  Serial.printf("- Temperatura: %.2f°C\n", temperatura);
+  Serial.printf("- Humedad: %.2f%%\n", humedad);
   
-  Serial.printf("{\"lat\":%.6f, \"lon\":%.6f, \"temp\":%.2f, \"hum\":%.2f}\n", 
-                lat, lon, temperatura, humedad);
+  // Paquete JSON final
+  Serial.println("\nPaquete de datos final:");
+  Serial.println("----------------------------------------");
+  Serial.printf("{\n");
+  Serial.printf("  \"gps\": {\n");
+  Serial.printf("    \"lat\": %.6f,\n", lat);
+  Serial.printf("    \"lon\": %.6f,\n", lon);
+  Serial.printf("    \"alt\": %.2f,\n", gps.altitude.meters());
+  Serial.printf("    \"sat\": %d,\n", gps.satellites.value());
+  Serial.printf("    \"hdop\": %.2f,\n", gps.hdop.hdop());
+  Serial.printf("    \"speed\": %.2f,\n", gps.speed.kmph());
+  Serial.printf("    \"course\": %.2f\n", gps.course.deg());
+  Serial.printf("  },\n");
+  Serial.printf("  \"sensors\": {\n");
+  Serial.printf("    \"temp\": %.2f,\n", temperatura);
+  Serial.printf("    \"hum\": %.2f\n", humedad);
+  Serial.printf("  }\n");
+  Serial.printf("}\n");
+  Serial.println("----------------------------------------\n");
 }
