@@ -28,6 +28,9 @@ float hum_vector[MEASURE_COUNT];
 float temperatura = 0.0, humedad = 0.0;
 double lat = 0.0, lon = 0.0;
 
+const char encryptionKey[] = "K3Y$3CR3T"; // Clave de 9 bytes
+const int keyLength = 9;
+
 
 void setup() {
   Serial.begin(115200);
@@ -130,6 +133,13 @@ void pruning() {
   Serial.println("----------------------------------------");
 }
 
+// Agregar esta función de cifrado
+void encryptData(char* data, int length) {
+  for(int i = 0; i < length; i++) {
+    data[i] = data[i] ^ encryptionKey[i % keyLength];
+  }
+}
+
 // Empaquetado y salida final con GPS
 void bundling() {
   smartDelay(0);
@@ -176,23 +186,24 @@ void bundling() {
   Serial.printf("- Temperatura: %.2f°C\n", temperatura);
   Serial.printf("- Humedad: %.2f%%\n", humedad);
   
-  // Paquete JSON final
-  Serial.println("\nPaquete de datos final:");
-  Serial.println("----------------------------------------");
-  Serial.printf("{\n");
-  Serial.printf("  \"gps\": {\n");
-  Serial.printf("    \"lat\": %.6f,\n", lat);
-  Serial.printf("    \"lon\": %.6f,\n", lon);
-  Serial.printf("    \"alt\": %.2f,\n", gps.altitude.meters());
-  Serial.printf("    \"sat\": %d,\n", gps.satellites.value());
-  Serial.printf("    \"hdop\": %.2f,\n", gps.hdop.hdop());
-  Serial.printf("    \"speed\": %.2f,\n", gps.speed.kmph());
-  Serial.printf("    \"course\": %.2f\n", gps.course.deg());
-  Serial.printf("  },\n");
-  Serial.printf("  \"sensors\": {\n");
-  Serial.printf("    \"temp\": %.2f,\n", temperatura);
-  Serial.printf("    \"hum\": %.2f\n", humedad);
-  Serial.printf("  }\n");
-  Serial.printf("}\n");
-  Serial.println("----------------------------------------\n");
+  // Crear el buffer para el JSON
+  char jsonBuffer[256]; // Ajustar tamaño según necesidades
+  int length = snprintf(jsonBuffer, sizeof(jsonBuffer),
+    "{\"gps\":{\"lat\":%.6f,\"lon\":%.6f,\"alt\":%.2f,\"sat\":%d,\"hdop\":%.2f},\"sensors\":{\"temp\":%.2f,\"hum\":%.2f}}",
+    lat, lon, gps.altitude.meters(), gps.satellites.value(), 
+    gps.hdop.hdop(), temperatura, humedad);
+
+  // Mostrar datos sin cifrar (para debug)
+  Serial.println("\nDatos sin cifrar:");
+  Serial.println(jsonBuffer);
+
+  // Cifrar datos
+  encryptData(jsonBuffer, length);
+
+  // Mostrar datos cifrados en hexadecimal
+  Serial.println("\nDatos cifrados (hex):");
+  for(int i = 0; i < length; i++) {
+    Serial.printf("%02X", (unsigned char)jsonBuffer[i]);
+  }
+  Serial.println("\n----------------------------------------\n");
 }
