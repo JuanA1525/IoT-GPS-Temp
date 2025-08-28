@@ -47,27 +47,7 @@ def decrypt_data(encrypted_hex, key="K3Y$3CR3T"):
         return None
 
 points = {
-    'point01': {'lat': 6.242159, 'lon': -75.590510, 'icon': 'punto01.png', 'tooltip': 'ALZATE ALZATE JACOBO', 'temperatura' : 0, 'humedad': 0},
-    'point02': {'lat': 6.239958, 'lon': -75.588911, 'icon': 'punto01.png', 'tooltip': 'BENJUMEA REINOSO ANDRES', 'temperatura' : 0, 'humedad': 0},
-    'point03': {'lat': 6.246757, 'lon': -75.592012, 'icon': 'punto01.png', 'tooltip': 'CHOLES LOPEZ JOHAN JUNIOR', 'temperatura' : 0, 'humedad': 0},
-    'point04': {'lat': 6.245159, 'lon': -75.591510, 'icon': 'punto01.png', 'tooltip': 'DIAZ RESTREPO MATEO', 'temperatura' : 0, 'humedad': 0},
-    'point05': {'lat': 6.238958, 'lon': -75.588911, 'icon': 'punto01.png', 'tooltip': 'GARCIA SANCHEZ DAVID', 'temperatura' : 0, 'humedad': 0},
-    'point06': {'lat': 6.241757, 'lon': -75.591812, 'icon': 'punto01.png', 'tooltip': 'OSPINA GIRALDO LUIS FELIPE', 'temperatura' : 0, 'humedad': 0},
     'point07': {'lat': 6.242159, 'lon': -75.590510, 'icon': 'punto01.png', 'tooltip': 'PORRAS VELEZ JUAN ANDRES', 'temperatura' : 0, 'humedad': 0},
-    'point08': {'lat': 6.239958, 'lon': -75.587911, 'icon': 'punto01.png', 'tooltip': 'RUEDA MARIN SEBASTIAN', 'temperatura' : 0, 'humedad': 0},
-    'point09': {'lat': 6.240757, 'lon': -75.592012, 'icon': 'punto01.png', 'tooltip': 'TOBAR VELEZ MKCLAREN', 'temperatura' : 0, 'humedad': 0},
-    'point10': {'lat': 6.243159, 'lon': -75.591510, 'icon': 'punto01.png', 'tooltip': 'CHEN YU JOHNSON', 'temperatura' : 0, 'humedad': 0},
-    'point11': {'lat': 6.245159, 'lon': -75.599510, 'icon': 'punto01.png', 'tooltip': 'GONZALEZ OSPINA DIEGO ALEJANDRO', 'temperatura' : 0, 'humedad': 0},
-    'point12': {'lat': 6.242159, 'lon': -75.590510, 'icon': 'punto01.png', 'tooltip': 'LOAIZA MARTINEZ FELIPE', 'temperatura' : 0, 'humedad': 0},
-    'point13': {'lat': 6.239958, 'lon': -75.588911, 'icon': 'punto01.png', 'tooltip': 'MONSALVE VALENCIA MATEO', 'temperatura' : 0, 'humedad': 0},
-    'point14': {'lat': 6.246757, 'lon': -75.592012, 'icon': 'punto01.png', 'tooltip': 'MORALES FRANCO JAIDER JOHAM', 'temperatura' : 0, 'humedad': 0},
-    'point15': {'lat': 6.245159, 'lon': -75.591510, 'icon': 'punto01.png', 'tooltip': 'PAEZ GIL JUAN ESTEBAN', 'temperatura' : 0, 'humedad': 0},
-    'point16': {'lat': 6.238958, 'lon': -75.588911, 'icon': 'punto01.png', 'tooltip': 'PRADA ZAPATA JACOBO', 'temperatura' : 0, 'humedad': 0},
-    'point17': {'lat': 6.241757, 'lon': -75.591812, 'icon': 'punto01.png', 'tooltip': 'RAMIREZ CASTAÑEDA JUAN FELIPE', 'temperatura' : 0, 'humedad': 0},
-    'point18': {'lat': 6.242159, 'lon': -75.590510, 'icon': 'punto01.png', 'tooltip': 'RIOS PRIETO JUAN JOSE', 'temperatura' : 0, 'humedad': 0},
-    'point19': {'lat': 6.239958, 'lon': -75.587911, 'icon': 'punto01.png', 'tooltip': 'VILLEGAS MORALES ALEJANDRO', 'temperatura' : 0, 'humedad': 0},
-    'point20': {'lat': 6.240757, 'lon': -75.592012, 'icon': 'punto01.png', 'tooltip': 'LEONARDO BETANCUR ', 'temperatura' : 0, 'humedad': 0},
-    'point21': {'lat': 6.243159, 'lon': -75.591510, 'icon': 'punto01.png', 'tooltip': 'VERA ZASULICH', 'temperatura' : 0, 'humedad': 0}
 }
 points_lock = threading.Lock()
 
