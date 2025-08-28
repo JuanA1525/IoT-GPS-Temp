@@ -11,7 +11,6 @@ import datetime
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server)
 
-# ---------- FUNCIONES DE CIFRADO ----------
 def decrypt_data(encrypted_hex, key="K3Y$3CR3T"):
     """
     Descifra datos usando XOR con la misma clave que el ESP8266
@@ -22,12 +21,10 @@ def decrypt_data(encrypted_hex, key="K3Y$3CR3T"):
         print(f"[DECRYPT] Longitud hex: {len(encrypted_hex)} caracteres")
         print(f"[DECRYPT] Clave utilizada: {key}")
 
-        # Convertir hexadecimal a bytes
         encrypted_bytes = bytes.fromhex(encrypted_hex)
         print(f"[DECRYPT] Bytes cifrados: {encrypted_bytes}")
         print(f"[DECRYPT] Longitud bytes: {len(encrypted_bytes)} bytes")
 
-        # Descifrar usando XOR (mismo algoritmo que cifrado)
         decrypted = bytearray()
         key_bytes = key.encode('utf-8')
         key_length = len(key_bytes)
@@ -49,7 +46,6 @@ def decrypt_data(encrypted_hex, key="K3Y$3CR3T"):
         print(f"[DECRYPT] Tipo de error: {type(e).__name__}")
         return None
 
-# Información de los puntos: coordenadas, imagen y texto emergente
 points = {
     'point01': {'lat': 6.242159, 'lon': -75.590510, 'icon': 'punto01.png', 'tooltip': 'ALZATE ALZATE JACOBO', 'temperatura' : 0, 'humedad': 0},
     'point02': {'lat': 6.239958, 'lon': -75.588911, 'icon': 'punto01.png', 'tooltip': 'BENJUMEA REINOSO ANDRES', 'temperatura' : 0, 'humedad': 0},
@@ -85,7 +81,6 @@ custom_icon = dict(
     popupAnchor=[-3, -76]
 )
 
-# Layout de la aplicación Dash
 app.layout = html.Div([
     html.H1("EXAMEN 2 IOT: construcción y operación de un End Device"),
     html.P("Envie a la pagina web los datos del sensor mediante un POST para actualizar la posición, temperatura y humedad"),
@@ -131,7 +126,6 @@ app.layout = html.Div([
     dcc.Interval(id='interval-component', interval=1*1000, n_intervals=0)
 ])
 
-# Endpoint de Flask para actualizar la posición y los datos de los puntos
 @server.route('/update_data', methods=['POST'])
 def update_data():
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -143,7 +137,6 @@ def update_data():
     print(f"[CONNECTION] Content-Length: {request.headers.get('Content-Length', 'No especificado')}")
 
     try:
-        # Log de datos brutos recibidos
         raw_data = request.get_data()
         print(f"[DATA] Datos brutos recibidos: {raw_data}")
         print(f"[DATA] Longitud datos brutos: {len(raw_data)} bytes")
@@ -155,12 +148,10 @@ def update_data():
         if received_data:
             print(f"[DATA] Claves en JSON: {list(received_data.keys())}")
 
-        # Verificar si los datos están cifrados
         if received_data and 'encrypted_data' in received_data:
             print(f"[ENCRYPTION] Datos cifrados detectados!")
             print(f"[ENCRYPTION] Estructura completa del JSON: {json.dumps(received_data, indent=2)}")
 
-            # Descifrar los datos
             encrypted_hex = received_data['encrypted_data']
             print(f"[ENCRYPTION] Datos cifrados (hex): {encrypted_hex}")
             print(f"[ENCRYPTION] Iniciando proceso de descifrado...")
@@ -174,7 +165,6 @@ def update_data():
             print(f"[ENCRYPTION] Datos descifrados: {decrypted_json}")
             print(f"[ENCRYPTION] Longitud datos descifrados: {len(decrypted_json)} caracteres")
 
-            # Parsear el JSON descifrado
             try:
                 data = json.loads(decrypted_json)
                 print(f"[ENCRYPTION] JSON descifrado parseado exitosamente: {data}")
@@ -184,13 +174,11 @@ def update_data():
                 print(f"[ERROR] JSON problemático: '{decrypted_json}'")
                 return json.dumps({'success': False, 'error': 'Invalid JSON after decryption'}), 400, {'ContentType': 'application/json'}
         else:
-            # Datos no cifrados (compatibilidad hacia atrás)
             data = received_data
             print(f"[DATA] Datos no cifrados detectados")
             if data:
                 print(f"[DATA] Contenido de datos no cifrados: {data}")
 
-        # Procesar los datos (cifrados o no cifrados)
         if data and 'id' in data and 'lat' in data and 'lon' in data:
             print(f"[PROCESSING] Procesando datos para punto {data['id']}")
             print(f"[PROCESSING] Coordenadas: lat={data['lat']}, lon={data['lon']}")
@@ -232,14 +220,12 @@ def update_data():
         print(f"{'='*60}\n")
         return json.dumps({'success': False, 'error': str(e)}), 500, {'ContentType': 'application/json'}
 
-# Callback de Dash para actualizar la posición de los marcadores en el mapa
 @app.callback([Output(f'marker_{i}', 'position') for i in points],
               Input('interval-component', 'n_intervals'))
 def update_markers(n):
     with points_lock:
         return [(point['lat'], point['lon']) for point in points.values()]
 
-# Callback de Dash para actualizar temperatura
 @app.callback(Output('Temperatura','children'),Input('interval-component', 'n_intervals'))
 def update_temperatura(n):
     childrentab=(
@@ -256,7 +242,6 @@ def update_temperatura(n):
             )        )
     return childrentab
 
-# Callback de Dash para actualizar humedad
 @app.callback(Output('Humedad','children'),Input('interval-component', 'n_intervals'))
 def update_humedad(n):
     childrentab=(
