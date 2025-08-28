@@ -46,14 +46,12 @@ const unsigned long BUNDLING_INTERVAL = 10000;
 const char encryptionKey[] = "K3Y$3CR3T"; // Clave de 9 bytes
 const int keyLength = 9;
 
-// Función de cifrado/descifrado XOR
 void encryptData(char* data, int length) {
   for(int i = 0; i < length; i++) {
     data[i] = data[i] ^ encryptionKey[i % keyLength];
   }
 }
 
-// Función para convertir datos binarios a hexadecimal
 String toHex(const char* data, int length) {
   String hexString = "";
   for(int i = 0; i < length; i++) {
