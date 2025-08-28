@@ -1,0 +1,23 @@
+#proyecto iot arquitectura FiWaRE
+version: "3.8"
+#plantilla servicios
+services:
+#broker del sistema
+  examen:
+    image: app/examen
+    hostname: examen
+    container_name: examen
+    networks:
+     - default
+    expose:
+      - "1010"
+    ports:
+     - "1010:1010"
+    build:
+      context: .
+      dockerfile: dockerfile
+networks:
+  default:
+    ipam:
+      config:
+      - subnet: 10.10.10.0/24

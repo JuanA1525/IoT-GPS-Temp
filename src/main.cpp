@@ -10,7 +10,7 @@
 // ---------- CONFIG WIFI ----------
 const char* ssid = "Juan celular";
 const char* password = "juancho9";
-const char* serverURL = "http://98.85.128.81/update_data";
+const char* serverURL = "http://10.17.172.70:1010/update_data";
 
 // ---------- CONFIG PINES ----------
 static const int RXPin = 2, TXPin = 0;
@@ -39,21 +39,32 @@ float temp_vector[MEASURE_COUNT];
 float hum_vector[MEASURE_COUNT];
 float temperatura = 0.0, humedad = 0.0;
 double lat = 0.0, lon = 0.0;
-unsigned long lastSendTime = 0;
-const unsigned long SEND_INTERVAL = 10000;
+unsigned long lastBundlingTime = 0;
+const unsigned long BUNDLING_INTERVAL = 10000;
 
-// ---------- CIFRADO (COMENTADO) ----------
-/*
+// ---------- CIFRADO ----------
 const char encryptionKey[] = "K3Y$3CR3T"; // Clave de 9 bytes
 const int keyLength = 9;
 
-// Función de cifrado comentada
+// Función de cifrado/descifrado XOR
 void encryptData(char* data, int length) {
   for(int i = 0; i < length; i++) {
     data[i] = data[i] ^ encryptionKey[i % keyLength];
   }
 }
-*/
+
+// Función para convertir datos binarios a hexadecimal
+String toHex(const char* data, int length) {
+  String hexString = "";
+  for(int i = 0; i < length; i++) {
+    if((unsigned char)data[i] < 16) {
+      hexString += "0";
+    }
+    hexString += String((unsigned char)data[i], HEX);
+  }
+  hexString.toUpperCase();
+  return hexString;
+}
 
 void setup() {
   Serial.begin(115200);
@@ -84,7 +95,7 @@ void loop() {
       break;
     case STATE_PRUNING:
       pruning();
-      currentState = STATE_BUNDLING;
+      currentState = STATE_CAPTURE;
       break;
     case STATE_BUNDLING:
       bundling();
@@ -92,10 +103,9 @@ void loop() {
       break;
   }
 
-  // Enviar datos cada 10 segundos
-  if (millis() - lastSendTime >= SEND_INTERVAL) {
-    sendDataToServer();
-    lastSendTime = millis();
+  if (millis() - lastBundlingTime >= BUNDLING_INTERVAL) {
+    currentState = STATE_BUNDLING;
+    lastBundlingTime = millis();
   }
 }
 
@@ -175,7 +185,6 @@ void pruning() {
   // Serial.println("----------------------------------------");
 }
 
-// Función para calcular hash simple
 unsigned long calculateHash(String data) {
   unsigned long hash = 0;
   for (int i = 0; i < data.length(); i++) {
@@ -209,19 +218,32 @@ void sendDataToServer() {
   Serial.printf("Coordenadas: %.6f, %.6f\n", send_lat, send_lon);
   Serial.printf("GPS Status: %s\n", (lat != -999.0) ? "VÁLIDO" : "SIN FIX");
   Serial.printf("Hash: %lu\n", dataHash);
-  Serial.println("JSON: " + jsonPayload);
+  Serial.println("JSON sin cifrar: " + jsonPayload);
+
+  char jsonBuffer[512];
+  int length = jsonPayload.length();
+  jsonPayload.toCharArray(jsonBuffer, length + 1);
+
+  encryptData(jsonBuffer, length);
+
+  String encryptedHex = toHex(jsonBuffer, length);
+
+  Serial.println("Datos cifrados (hex): " + encryptedHex);
+
+  String finalPayload = "{\"encrypted_data\":\"" + encryptedHex + "\"}";
 
   http.begin(wifiClient, serverURL);
   http.addHeader("Content-Type", "application/json");
 
-  int httpResponseCode = http.POST(jsonPayload);
+  int httpResponseCode = http.POST(finalPayload);
 
+  String response = http.getString();
   if (httpResponseCode > 0) {
-    String response = http.getString();
     Serial.printf("✓ Enviado exitosamente (Código: %d)\n", httpResponseCode);
     Serial.println("Respuesta: " + response);
   } else {
     Serial.printf("✗ Error en envío (Código: %d)\n", httpResponseCode);
+    Serial.println("Respuesta: " + response);
   }
   Serial.println("========================================\n");
 
@@ -234,10 +256,22 @@ void bundling() {
   // Serial.println("\n[BUNDLING] Empaquetando datos finales...");
   // Serial.println("----------------------------------------");
 
+  // Actualizar coordenadas GPS
+  if (gps.location.isValid()) {
+    lat = gps.location.lat();
+    lon = gps.location.lng();
+  } else {
+    lat = -999.0;
+    lon = -999.0;
+  }
+
+  // Llamar a la función de envío de datos
+  sendDataToServer();
+
+  /*
+  // Todo el código de diagnóstico GPS comentado
   // Serial.println("Diagnóstico GPS:");
   // Serial.println("----------------------------------------");
-
-  // Estado general del GPS
   // Serial.printf("- Satélites conectados: %d\n", gps.satellites.value());
   // Serial.printf("- Precisión (HDOP): %.2f\n", gps.hdop.hdop());
   // Serial.printf("- Altura sobre nivel del mar: %.2f metros\n", gps.altitude.meters());
@@ -253,48 +287,18 @@ void bundling() {
   //   Serial.println("- Fecha/Hora: No disponible");
   // }
 
-  // Estado de las coordenadas
   // Serial.println("\nEstado de coordenadas:");
-  if (gps.location.isValid()) {
-    lat = gps.location.lat();
-    lon = gps.location.lng();
-    // Serial.println("- Estado: Válidas");
-    // Serial.printf("- Latitud: %.6f\n", lat);
-    // Serial.printf("- Longitud: %.6f\n", lon);
-    // Serial.printf("- Edad de los datos: %lu ms\n", gps.location.age());
-  } else {
-    lat = -999.0;
-    lon = -999.0;
-    // Serial.println("- Estado: NO VÁLIDAS");
-    // Serial.println("- Causa posible: Sin fix GPS");
-  }
+  // Serial.println("- Estado: Válidas");
+  // Serial.printf("- Latitud: %.6f\n", lat);
+  // Serial.printf("- Longitud: %.6f\n", lon);
+  // Serial.printf("- Edad de los datos: %lu ms\n", gps.location.age());
+  // Serial.println("- Estado: NO VÁLIDAS");
+  // Serial.println("- Causa posible: Sin fix GPS");
 
   // Diagnóstico de sensores
   // Serial.println("\nDiagnóstico de sensores HDC1080:");
   // Serial.printf("- Temperatura: %.2f°C\n", temperatura);
   // Serial.printf("- Humedad: %.2f%%\n", humedad);
-
-  /*
-  // Código de cifrado comentado
-  // Crear el buffer para el JSON
-  char jsonBuffer[256]; // Ajustar tamaño según necesidades
-  int length = snprintf(jsonBuffer, sizeof(jsonBuffer),
-    "{\"gps\":{\"lat\":%.6f,\"lon\":%.6f,\"alt\":%.2f,\"sat\":%d,\"hdop\":%.2f},\"sensors\":{\"temp\":%.2f,\"hum\":%.2f}}",
-    lat, lon, gps.altitude.meters(), gps.satellites.value(),
-    gps.hdop.hdop(), temperatura, humedad);
-
-  // Mostrar datos sin cifrar (para debug)
-  Serial.println("\nDatos sin cifrar:");
-  Serial.println(jsonBuffer);
-
-  // Cifrar datos
-  encryptData(jsonBuffer, length);
-
-  // Mostrar datos cifrados en hexadecimal
-  Serial.println("\nDatos cifrados (hex):");
-  for(int i = 0; i < length; i++) {
-    Serial.printf("%02X", (unsigned char)jsonBuffer[i]);
-  }
   */
 
   // Serial.println("----------------------------------------\n");
